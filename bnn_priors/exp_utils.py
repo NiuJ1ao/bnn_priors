@@ -184,7 +184,8 @@ def get_model(x_train, y_train, model, width, depth, weight_prior, weight_loc,
                             bn=batchnorm, softmax_temp=1., weight_prior_params=weight_prior_params,
                             bias_prior_params=bias_prior_params).to(x_train)
     elif model == "googleresnet":
-        net = ResNet(prior_w=weight_prior, loc_w=weight_loc, std_w=weight_scale, depth=20,
+        print("model depth:", depth, "model width:", width)
+        net = ResNet(prior_w=weight_prior, loc_w=weight_loc, std_w=weight_scale, depth=depth, kernel_size=width, 
                      prior_b=bias_prior, loc_b=bias_loc, std_b=bias_scale, scaling_fn=scaling_fn,
                      bn=batchnorm, softmax_temp=1., weight_prior_params=weight_prior_params,
                      bias_prior_params=bias_prior_params).to(x_train)
@@ -563,11 +564,11 @@ def sneaky_artifact(_run, name):
 
 
 def reject_samples_(samples, metrics_file):
+    is_sample = (metrics_file["acceptance/is_sample"][:] == 1)
     try:
         rejected_arr = metrics_file["acceptance/rejected"][is_sample]
     except KeyError:
         return samples
-    is_sample = (metrics_file["acceptance/is_sample"][:] == 1)
     assert np.all((rejected_arr == 0) | (rejected_arr == 1))
     metrics_steps = metrics_file["steps"][is_sample]
     rejected = {int(s): bool(r) for (s, r) in zip(metrics_steps, rejected_arr)}

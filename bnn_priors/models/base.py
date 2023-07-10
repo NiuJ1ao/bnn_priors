@@ -21,10 +21,14 @@ class AbstractModel(nn.Module, abc.ABC):
     def __init__(self, net: nn.Module):
         super().__init__()
         self.net = net
+        
+    def set_prior_scale(self, prior_scale):
+        self.prior_scale = prior_scale
+        print(len(self.prior_scale), self.prior_scale)
 
     def log_prior(self):
         "log p(params)"
-        lp = sum(p.log_prob() for _, p in prior.named_priors(self))
+        lp = sum(p.log_prob() * self.prior_scale[n] for n, p in prior.named_priors(self))
         if isinstance(lp, float):
             return torch.tensor(lp)
         return lp

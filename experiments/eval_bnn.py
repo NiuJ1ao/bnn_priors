@@ -78,7 +78,7 @@ def get_train_data(data):
 
 @ex.automain
 def main(config_file, batch_size, run_dir, eval_data, data, skip_first, model,
-         width, eval_samples, calibration_eval, ood_eval, marglik_eval,
+         width, calibration_eval, ood_eval,
          is_run_sgd):
     run_dir = Path(run_dir)
     with open(run_dir/"run.json") as infile:

@@ -11,6 +11,7 @@ import contextlib
 import numpy as np
 import torch as t
 from pathlib import Path
+from collections import defaultdict
 from pyro.infer.mcmc import NUTS, HMC
 from pyro.infer.mcmc.api import MCMC
 from sacred import Experiment
@@ -18,7 +19,7 @@ from sacred.utils import apply_backspaces_and_linefeeds
 from sacred.observers import FileStorageObserver
 
 from bnn_priors.data import UCI, CIFAR10, Synthetic
-from bnn_priors.models import RaoBDenseNet, DenseNet, PreActResNet18, PreActResNet34
+from bnn_priors.models import layers, RaoBDenseNet, DenseNet, PreActResNet18, PreActResNet34
 from bnn_priors.prior import LogNormal
 from bnn_priors import prior
 import bnn_priors.inference
@@ -97,6 +98,8 @@ def config():
     load_samples = None
     # batch size for the training
     batch_size = 128
+    # prior scale
+    prior_scale = 0
     # whether to use Metropolis-Hastings rejection steps (works only with some integrators)
     reject_samples = False
     # whether to use batch normalization
@@ -152,10 +155,55 @@ def evaluate_model(model, dataloader_test, samples):
         calibration_eval=False)
 
 
+@t.no_grad()
+def get_patches(model, x, scale_prior):
+    alphas = {}
+    def compute_patches(name):
+        def hook(model, input, output):
+            if isinstance(model, layers.Conv2d):
+                kernel_H, kernel_W = model.kernel_size[0], model.kernel_size[1]
+                stride_H, stride_W = model.stride[0], model.stride[1]
+                patch_pixels = kernel_H * kernel_W
+                output_shape = output.detach().shape[-2:]
+                overlap_patches = (output_shape[0] * output_shape[1])
+                if scale_prior == 0:
+                    alphas[name] = 1.0
+                elif scale_prior == 1:
+                    alphas[name] = 1 / overlap_patches
+                elif scale_prior == 2:
+                    extra_H = kernel_H if stride_H > kernel_H else stride_H
+                    extra_W = kernel_W if stride_W > kernel_W else stride_W
+                    patches = output_shape[0] * (kernel_H * extra_W) / patch_pixels
+                    patches += output_shape[1] * (kernel_W * extra_H) / patch_pixels
+                    remain_patches = overlap_patches - output_shape[0] - output_shape[1]
+                    patches += remain_patches * (extra_H * extra_W) / patch_pixels
+                    alphas[name] = 1 / patches
+            elif isinstance(model, layers.Linear):
+                alphas[name] = 1.0
+            else:
+                pass
+        return hook
+    handles = []
+    for name, module in model.named_modules():
+        handle = module.register_forward_hook(compute_patches(name))
+        handles.append(handle)
+    model(x)
+    for h in handles:
+        h.remove()
+    return alphas
+
+def patches2prior(model, patches):
+    alphas = {}
+    for name, _ in model.named_modules():
+        if name.endswith("prior"):
+            n = name.replace(".weight_prior", "").replace(".bias_prior", "")
+            alphas[name] = patches[n]
+    return alphas
+
 @ex.automain
 def main(inference, model, width, n_samples, warmup, init_method, burnin, skip,
          metrics_skip, cycles, temperature, momentum, precond_update, lr,
-         batch_size, load_samples, save_samples, reject_samples, run_id,
+         batch_size, scale_prior, load_samples, save_samples, reject_samples, run_id,
          log_dir, sampling_decay, progressbar, skip_first, _run, _log):
     assert inference in ["SGLD", "HMC", "VerletSGLD", "OurHMC", "HMCReject", "VerletSGLDReject", "SGLDReject"]
     assert width > 0
@@ -241,6 +289,13 @@ def main(inference, model, width, n_samples, warmup, init_method, burnin, skip,
             # Disable parallel loading for `TensorDataset`s.
             num_workers = (0 if isinstance(data.norm.train, t.utils.data.TensorDataset) else 2)
             dataloader = t.utils.data.DataLoader(data.norm.train, batch_size=batch_size, shuffle=True, drop_last=False, num_workers=num_workers)
+                
+            print("temperature:", temperature)
+            data_sample = dataloader.dataset[0][0].unsqueeze(0)
+            alphas = get_patches(model, data_sample, scale_prior=scale_prior)
+            alphas = patches2prior(model, alphas)
+            model.set_prior_scale(alphas)
+            
             dataloader_test = t.utils.data.DataLoader(data.norm.test, batch_size=batch_size, shuffle=False, drop_last=False, num_workers=num_workers)
             mcmc = runner_class(model=model, dataloader=dataloader, dataloader_test=dataloader_test, epochs_per_cycle=epochs_per_cycle,
                                 warmup_epochs=warmup, sample_epochs=sample_epochs, learning_rate=lr,

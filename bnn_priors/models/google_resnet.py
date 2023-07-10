@@ -9,13 +9,13 @@ from .base import ClassificationModel
 from .. import prior
 
 class BasicBlock(nn.Module):
-    def __init__(self, in_filters, filters, stride, conv_kwargs, batchnorm):
+    def __init__(self, in_filters, filters, kernel_size, stride, conv_kwargs, batchnorm):
         super().__init__()
         self.main = nn.Sequential(
-            Conv2dPrior(in_filters, filters, kernel_size=3, padding=1, stride=stride, **conv_kwargs),
+            Conv2dPrior(in_filters, filters, kernel_size=kernel_size, padding=1, stride=stride, **conv_kwargs),
             batchnorm(filters),
             nn.ReLU(),
-            Conv2dPrior(filters, filters, kernel_size=3, padding=1, stride=1, **conv_kwargs),
+            Conv2dPrior(filters, filters, kernel_size=kernel_size, padding=1, stride=1, **conv_kwargs),
             batchnorm(filters))
 
         if stride == 1:
@@ -31,7 +31,7 @@ class BasicBlock(nn.Module):
         z = self.shortcut(x)
         return nn.functional.relu(y + z)
 
-def ResNet(softmax_temp=1., depth=20, num_classes=10,
+def ResNet(softmax_temp=1., depth=20, kernel_size=3, num_classes=10,
            prior_w=prior.Normal, loc_w=0., std_w=2**.5,
            prior_b=prior.Normal, loc_b=0., std_b=1.,
            scaling_fn=None, bn=True, weight_prior_params={}, bias_prior_params={},
@@ -50,7 +50,7 @@ def ResNet(softmax_temp=1., depth=20, num_classes=10,
         raise ValueError('depth must be 6n+2 (e.g. 20, 32, 44).')
 
     layers = [
-        Conv2dPrior(3, filters, kernel_size=3, padding=1, stride=1, **conv_kwargs),
+        Conv2dPrior(3, filters, kernel_size=kernel_size, padding=1, stride=1, **conv_kwargs),
         batchnorm(filters),
         nn.ReLU()]
 
@@ -60,11 +60,11 @@ def ResNet(softmax_temp=1., depth=20, num_classes=10,
         filters *= stride
 
         layers.append(BasicBlock(
-            prev_filters, filters, stride, conv_kwargs, batchnorm))
+            prev_filters, filters, kernel_size, stride, conv_kwargs, batchnorm))
 
         for _ in range(num_res_blocks-1):
             layers.append(BasicBlock(
-                filters, filters, 1, conv_kwargs, batchnorm))
+                filters, filters, kernel_size, 1, conv_kwargs, batchnorm))
 
     layers += [
         nn.AvgPool2d(8),
