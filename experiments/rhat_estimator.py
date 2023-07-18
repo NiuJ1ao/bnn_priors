@@ -7,7 +7,6 @@ import torch
 from glob import glob
 from tqdm import tqdm
 from pathlib import Path
-from collections import defaultdict
 import bnn_priors
 
 from bnn_priors import exp_utils
@@ -65,12 +64,13 @@ def main():
     batch_size = 128
     temps = [0.001, 0.01, 0.1, 1]
     exp_name = "exp_cifar10_depth20_width3_lr0.01_warmup45_cycles60_scale0"
+    device = torch.device("cuda:0")  # can be CUDA instead
+    
     sample_files = glob(f"/data2/users/yn621/cold-posterior-cnn/results/{exp_name}/*/samples.pt")
     # sample_files = [
     #     "/data2/users/yn621/cold-posterior-cnn/results/exp_cifar10_depth20_width3_lr0.01_warmup45_cycles60_scale0/1/samples.pt",
     #     "/data2/users/yn621/cold-posterior-cnn/results/exp_cifar10_depth20_width3_lr0.01_warmup45_cycles60_scale0/5/samples.pt",
     # ]
-    device = torch.device("cuda:0")  # can be CUDA instead
     
     lls = {str(temp) : [] for temp in temps}
     lps = {str(temp) : [] for temp in temps}
@@ -118,19 +118,19 @@ def main():
     for temp in lls:
         data = arviz.convert_to_dataset(lls[temp])
         rhat = arviz.rhat(data)
-        print(f"temperature {temp}: {rhat.mean()[:]}")
+        print(f"temperature {temp}: {rhat.mean()}")
         
     print("\nRhat diagnostic for functions of log-prior")
     for temp in lps:
         data = arviz.convert_to_dataset(lps[temp])
         rhat = arviz.rhat(data)
-        print(f"temperature {temp}: {rhat.mean()[:]}")
+        print(f"temperature {temp}: {rhat.mean()}")
         
     print("\nRhat diagnostic for functions of potential")
     for temp in ps:
         data = arviz.convert_to_dataset(ps[temp])
         rhat = arviz.rhat(data)
-        print(f"temperature {temp}: {rhat.mean()[:]}")
+        print(f"temperature {temp}: {rhat.mean()}")
     
 if __name__ == "__main__":
     main()
