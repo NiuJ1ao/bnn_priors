@@ -99,7 +99,7 @@ def config():
     # batch size for the training
     batch_size = 128
     # prior scale
-    prior_scale = 0
+    scale_prior = 0
     # whether to use Metropolis-Hastings rejection steps (works only with some integrators)
     reject_samples = False
     # whether to use batch normalization
@@ -194,10 +194,9 @@ def get_patches(model, x, scale_prior):
 
 def patches2prior(model, patches):
     alphas = {}
-    for name, _ in model.named_modules():
-        if name.endswith("prior"):
-            n = name.replace(".weight_prior", "").replace(".bias_prior", "")
-            alphas[name] = patches[n]
+    for name, _ in prior.named_priors(model):
+        n = name.replace(".weight_prior", "").replace(".bias_prior", "")
+        alphas[name] = patches[n]
     return alphas
 
 @ex.automain

@@ -24,7 +24,7 @@ class AbstractModel(nn.Module, abc.ABC):
         
     def set_prior_scale(self, prior_scale):
         self.prior_scale = prior_scale
-        print(len(self.prior_scale), self.prior_scale)
+        # print(len(self.prior_scale), self.prior_scale)
 
     def log_prior(self):
         "log p(params)"

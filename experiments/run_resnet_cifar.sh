@@ -1,13 +1,13 @@
 #!/bin/bash
 
-temp=1
-scale_prior=0
-device=0
+temp=1e-2
+scale_prior=1
+device=3
 cycles=60
 warmup=45
-depth=50
+depth=20
 kernel_size=3
-lr=0.01
+lr=0.3
 data="cifar10"
 log_dir="/data2/users/yn621/cold-posterior-cnn/results/exp_${data}_depth${depth}_width${kernel_size}_lr${lr}_warmup${warmup}_cycles${cycles}_scale${scale_prior}"
 
