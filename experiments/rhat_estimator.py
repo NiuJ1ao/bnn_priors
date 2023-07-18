@@ -105,7 +105,7 @@ def main():
         lls[str(config["temperature"])].extend(log_likelihoods[np.newaxis, :])
         lps[str(config["temperature"])].extend(log_priors[np.newaxis, :])
         ps[str(config["temperature"])].extend(potentials[np.newaxis, :])
-    
+
     for temp in lls:
         lls[temp] = np.stack(lls[temp])
     for temp in lps:
@@ -118,19 +118,19 @@ def main():
     for temp in lls:
         data = arviz.convert_to_dataset(lls[temp])
         rhat = arviz.rhat(data)
-        print(f"temperature {temp}: {rhat.mean()}")
+        print(f"temperature {temp}: {float(rhat.mean()['x'])}")
         
     print("\nRhat diagnostic for functions of log-prior")
     for temp in lps:
         data = arviz.convert_to_dataset(lps[temp])
         rhat = arviz.rhat(data)
-        print(f"temperature {temp}: {rhat.mean()}")
+        print(f"temperature {temp}: {float(rhat.mean()['x'])}")
         
     print("\nRhat diagnostic for functions of potential")
     for temp in ps:
         data = arviz.convert_to_dataset(ps[temp])
         rhat = arviz.rhat(data)
-        print(f"temperature {temp}: {rhat.mean()}")
+        print(f"temperature {temp}: {float(rhat.mean()['x'])}")
     
 if __name__ == "__main__":
     main()
