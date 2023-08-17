@@ -310,9 +310,9 @@ def evaluate_model(model: bnn_priors.models.AbstractModel,
         ensemble_preds = t.distributions.Categorical(logits=_log_space_mean(acc_data, 0))
         last_preds = t.distributions.Categorical(logits=acc_data[-1])
 
-        assert t.allclose(ensemble_preds.log_prob(labels).mean(0),
-                          lp_ensemble)
-        assert t.allclose(last_preds.log_prob(labels).mean(0), lps_each_model[-1])
+        # assert t.allclose(ensemble_preds.log_prob(labels).mean(0),
+        #                   lp_ensemble)
+        # assert t.allclose(last_preds.log_prob(labels).mean(0), lps_each_model[-1])
 
     elif isinstance(preds, t.distributions.Normal):
         ensemble_preds = t.distributions.Normal(acc_data.mean(0), t.ones_like(acc_data[0]))

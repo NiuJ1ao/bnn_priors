@@ -63,14 +63,10 @@ def main():
     skip_first = 50
     batch_size = 128
     temps = [0.001, 0.01, 0.1, 1]
-    exp_name = "exp_cifar10_depth20_width3_lr0.01_warmup45_cycles60_scale0"
+    exp_name = "exp_cifar10_augmented_depth20_width3_lr0.3_warmup45_cycles60_scale2"
     device = torch.device("cuda:0")  # can be CUDA instead
     
-    sample_files = glob(f"/data2/users/yn621/cold-posterior-cnn/results/{exp_name}/*/samples.pt")
-    # sample_files = [
-    #     "/data2/users/yn621/cold-posterior-cnn/results/exp_cifar10_depth20_width3_lr0.01_warmup45_cycles60_scale0/1/samples.pt",
-    #     "/data2/users/yn621/cold-posterior-cnn/results/exp_cifar10_depth20_width3_lr0.01_warmup45_cycles60_scale0/5/samples.pt",
-    # ]
+    sample_files = glob(f"/data2/users/yn621/bnn_models/run1/{exp_name}/*/samples.pt")
     
     lls = {str(temp) : [] for temp in temps}
     lps = {str(temp) : [] for temp in temps}

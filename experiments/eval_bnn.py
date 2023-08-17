@@ -115,6 +115,7 @@ def main(config_file, batch_size, run_dir, eval_data, data, skip_first, model,
         batch_size = len(data.norm.test)
     else:
         batch_size = min(batch_size, len(data.norm.test))
+    # dataloader_test = torch.utils.data.DataLoader(data.norm.train, batch_size=batch_size)
     dataloader_test = torch.utils.data.DataLoader(data.norm.test, batch_size=batch_size)
 
     if calibration_eval and not (eval_data[:7] == "cifar10" or eval_data[-5:] == "mnist"):

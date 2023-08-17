@@ -132,7 +132,7 @@ dmypy.json
 # Custom
 logs
 results
-bnn_priors/data/CIFAR/cifar10/*
+bnn_priors/data/*
 */lsf.o*
 figures/*.pdf
 
